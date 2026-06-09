@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Greentech | Firewall Ambiental</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            black: '#000000',
+            zinc: {
+              850: '#1f1f22',
+              900: '#18181b',
+              950: '#09090b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  
+  <!-- Babel Standalone para transpilar JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <style>
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
+    .grid-data {
+      background-size: 50px 50px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      mask-image: radial-gradient(ellipse at top, black 20%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at top, black 20%, transparent 80%);
+    }
+    
+    .blinking::after {
+      content: '▋';
+      animation: cursor-blink 1s step-start infinite;
+      color: #ffffff;
+    }
+    
+    @keyframes cursor-blink { 50% { opacity: 0; } }
+    
+    /* Subtle hover effect for cards */
+    .glow-card {
+      transition: all 0.3s ease;
+    }
+    .glow-card:hover {
+      border-color: #3f3f46;
+      background-color: #18181b;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    function App() {
+      const [spinStep, setSpinStep] = useState(1);
+      const [activeBenefit, setActiveBenefit] = useState(0);
+      const [formData, setFormData] = useState({
+        segmento: '',
+        volume: '',
+        material: '',
+        nome: '',
+        empresa: '',
+        email: '',
+        telefone: ''
+      });
+
+      const canvasRef = useRef(null);
+
+      const prevFormStep = () => {
+        setSpinStep(prev => Math.max(1, prev - 1));
+      };
+
+      const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+      };
+
+      const selectValueAndAdvance = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        setTimeout(() => {
+          setSpinStep(prev => prev + 1);
+        }, 200);
+      };
+
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setActiveBenefit(prev => (prev + 1) % 3);
+        }, 6000);
+        return () => clearInterval(interval);
+      }, []);
+
+      useEffect(() => {
+        if (!window.THREE || !canvasRef.current) return;
+
+        const THREE = window.THREE;
+        const container = canvasRef.current;
+        container.innerHTML = '';
+
+        let width = container.clientWidth || container.parentElement.clientWidth || 500;
+        let height = container.clientHeight || container.parentElement.clientHeight || 450;
+
+        const scene = new THREE.Scene();
+        // Fog para dar profundidade infinita
+        scene.fog = new THREE.FogExp2(0x000000, 0.12);
+
+        const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const group = new THREE.Group();
+        scene.add(group);
+
+        // Criar Cubos/Nós simulando o "Ledger/Glass Nodes" da imagem
+        const nodeCount = 15;
+        const nodes = [];
+        const cubeGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const cubeMatSolid = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 });
+        const cubeMatWire = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15, wireframe: true });
+
+        for(let i = 0; i < nodeCount; i++) {
+          const mesh = new THREE.Mesh(cubeGeo, Math.random() > 0.5 ? cubeMatSolid : cubeMatWire);
+          mesh.position.set(
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 10
+          );
+          mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+          
+          nodes.push({
+            mesh,
+            velocity: new THREE.Vector3((Math.random() - 0.5)*0.01, (Math.random() - 0.5)*0.01, (Math.random() - 0.5)*0.01)
+          });
+          group.add(mesh);
+        }
+
+        // Criar Partículas (Datapoints)
+        const particleCount = 120;
+        const particlesData = [];
+        const pGeo = new THREE.BufferGeometry();
+        const pPositions = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount; i++) {
+          pPositions[i * 3] = (Math.random() - 0.5) * 12;
+          pPositions[i * 3 + 1] = (Math.random() - 0.5) * 12;
+          pPositions[i * 3 + 2] = (Math.random() - 0.5) * 12;
+
+          particlesData.push({
+            velocity: new THREE.Vector3((Math.random() - 0.5) * 0.015, (Math.random() - 0.5) * 0.015, (Math.random() - 0.5) * 0.015),
+            numConnections: 0
+          });
+        }
+
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+        
+        // Textura suave para as partículas
+        const canvas = document.createElement('canvas');
+        canvas.width = 16; canvas.height = 16;
+        const context = canvas.getContext('2d');
+        const gradient = context.createRadialGradient(8, 8, 0, 8, 8, 8);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        context.fillStyle = gradient;
+        context.fillRect(0,0,16,16);
+        const pTexture = new THREE.CanvasTexture(canvas);
+
+        const pMat = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 0.15,
+          map: pTexture,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.6
+        });
+
+        const particleSystem = new THREE.Points(pGeo, pMat);
+        group.add(particleSystem);
+
+        // Linhas de conexão (Rede Blockchain)
+        const maxConnections = 250;
+        const linePositions = new Float32Array(maxConnections * 6);
+        const linesGeo = new THREE.BufferGeometry();
+        linesGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+
+        const linesMat = new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.15,
+          blending: THREE.AdditiveBlending
+        });
+        
+        const linesMesh = new THREE.LineSegments(linesGeo, linesMat);
+        group.add(linesMesh);
+
+        // Interação com Mouse
+        let targetRotationX = 0, targetRotationY = 0;
+        const handleMouseMove = (e) => {
+          const rect = container.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / width) * 2 - 1;
+          const y = -((e.clientY - rect.top) / height) * 2 + 1;
+          targetRotationY = x * 0.2;
+          targetRotationX = y * 0.2;
+        };
+        container.addEventListener('mousemove', handleMouseMove);
+
+        let animationId;
+        const animate = () => {
+          animationId = requestAnimationFrame(animate);
+
+          // Rotação suave baseada no mouse + constante
+          group.rotation.x += (targetRotationX - group.rotation.x) * 0.05;
+          group.rotation.y += (targetRotationY - group.rotation.y) * 0.05;
+          group.rotation.y += 0.001; 
+
+          // Atualizar os Cubos
+          nodes.forEach(n => {
+            n.mesh.position.add(n.velocity);
+            n.mesh.rotation.x += 0.005;
+            n.mesh.rotation.y += 0.005;
+            
+            if(n.mesh.position.x > 6 || n.mesh.position.x < -6) n.velocity.x *= -1;
+            if(n.mesh.position.y > 6 || n.mesh.position.y < -6) n.velocity.y *= -1;
+            if(n.mesh.position.z > 6 || n.mesh.position.z < -6) n.velocity.z *= -1;
+          });
+
+          // Atualizar partículas e recalcular linhas
+          for (let i = 0; i < particleCount; i++) particlesData[i].numConnections = 0;
+
+          const positions = particleSystem.geometry.attributes.position.array;
+          let lineIndex = 0;
+
+          for (let i = 0; i < particleCount; i++) {
+            const particleData = particlesData[i];
+
+            positions[i * 3] += particleData.velocity.x;
+            positions[i * 3 + 1] += particleData.velocity.y;
+            positions[i * 3 + 2] += particleData.velocity.z;
+
+            // Bounce
+            if (positions[i * 3] < -6 || positions[i * 3] > 6) particleData.velocity.x *= -1;
+            if (positions[i * 3 + 1] < -6 || positions[i * 3 + 1] > 6) particleData.velocity.y *= -1;
+            if (positions[i * 3 + 2] < -6 || positions[i * 3 + 2] > 6) particleData.velocity.z *= -1;
+
+            // Checar distâncias para desenhar as conexões
+            for (let j = i + 1; j < particleCount; j++) {
+              const particleDataB = particlesData[j];
+              const dx = positions[i * 3] - positions[j * 3];
+              const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
+              const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
+              const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+              if (dist < 2.5) {
+                particleData.numConnections++;
+                particleDataB.numConnections++;
+
+                if (lineIndex < maxConnections * 6) {
+                  linePositions[lineIndex++] = positions[i * 3];
+                  linePositions[lineIndex++] = positions[i * 3 + 1];
+                  linePositions[lineIndex++] = positions[i * 3 + 2];
+
+                  linePositions[lineIndex++] = positions[j * 3];
+                  linePositions[lineIndex++] = positions[j * 3 + 1];
+                  linePositions[lineIndex++] = positions[j * 3 + 2];
+                }
+              }
+            }
+          }
+
+          particleSystem.geometry.attributes.position.needsUpdate = true;
+          
+          linesMesh.geometry.attributes.position.needsUpdate = true;
+          linesMesh.geometry.setDrawRange(0, lineIndex / 3);
+
+          renderer.render(scene, camera);
+        };
+        animate();
+
+        const handleResize = () => {
+          if (!container) return;
+          camera.aspect = container.clientWidth / container.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(container.clientWidth, container.clientHeight);
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+          cancelAnimationFrame(animationId);
+          window.removeEventListener('resize', handleResize);
+          if (container) {
+            container.removeEventListener('mousemove', handleMouseMove);
+            container.innerHTML = '';
+          }
+        };
+      }, []);
+
+      return (
+        <div className="min-h-screen bg-black text-zinc-300 font-sans relative antialiased selection:bg-white selection:text-black">
+          
+          <div className="fixed inset-0 grid-data pointer-events-none z-0"></div>
+
+          {/* HEADER MINIMALISTA */}
+          <nav className="relative z-30 w-full px-8 py-5 border-b border-zinc-900 bg-black/50 backdrop-blur-md">
+            <div className="max-w-7xl mx-auto flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white font-black text-xs">
+                  <i className="ph-bold ph-shield-check" />
+                </div>
+                <div>
+                  <span className="text-white font-bold tracking-widest text-xs uppercase block">Greentech</span>
+                  <span className="text-[9px] block font-mono text-zinc-500 tracking-wider">Firewall Ambiental</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-[9px] font-mono text-zinc-500 uppercase tracking-widest border border-zinc-900 bg-zinc-950 px-3 py-1.5 rounded">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 animate-pulse"></span>
+                Auditoria SINIR Ativa
+              </div>
+            </div>
+          </nav>
+
+          <main className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-24">
+            
+            {/* HERO SECTION - DATA DRIVEN */}
+            <section className="grid lg:grid-cols-2 gap-16 items-center mb-32">
+              <div className="space-y-8">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-zinc-800 bg-zinc-950 text-[10px] font-mono text-zinc-300">
+                  <i className="ph-bold ph-radar text-white" />
+                  <span>INTELIGÊNCIA FISCAL APLICADA</span>
+                </div>
+                
+                <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight tracking-tight">
+                  Algoritmos cruzam MTRs e NFs em milissegundos. <br/>
+                  <span className="text-zinc-500">Seu lastro suporta o teste?</span>
+                </h1>
+                
+                <p className="text-sm text-zinc-400 leading-relaxed font-light">
+                  A SEFAZ e o IBAMA automatizaram o embargo. Indústrias que dependem de planilhas e cooperativas não-auditadas estão expostas à suspensão da CND e bloqueio de capital em 48 horas.
+                </p>
+
+                {/* ESTATÍSTICAS SÉRIAS */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 py-4 border-t border-b border-zinc-900">
+                  <div>
+                    <span className="text-3xl font-bold text-white block">+400%</span>
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase block mt-2">Aumento de Autuações</span>
+                  </div>
+                  <div className="border-l border-zinc-900 pl-8">
+                    <span className="text-3xl font-bold text-white block">R$ 50M</span>
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase block mt-2">Multas Aplicadas em SP</span>
+                  </div>
+                  <div className="border-l border-zinc-900 pl-8 hidden sm:block">
+                    <span className="text-3xl font-bold text-white block">22%</span>
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase block mt-2">Déficit de PNRS Médio</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* INTERACTIVE 3D CONCEPT */}
+              <div className="relative flex flex-col items-center justify-center min-h-[450px] border border-zinc-900 bg-zinc-950 p-2 overflow-hidden shadow-2xl cursor-crosshair">
+                <div className="absolute inset-0 z-10 pointer-events-auto mix-blend-screen" ref={canvasRef}></div>
+                <div className="absolute bottom-5 z-20 px-4 py-2 bg-black/80 border border-zinc-800 text-[9px] font-mono text-zinc-400 backdrop-blur-md">
+                  Rede de Dados em Tempo Real (Live)
+                </div>
+              </div>
+            </section>
+          </main>
+
+          {/* --- INÍCIO SPIN SELLING --- */}
+          <div className="w-full bg-black relative z-10">
+            
+            {/* S: Situação */}
+            <section className="relative py-32 px-6 sm:px-12 border-t border-zinc-900 overflow-hidden">
+              <div className="max-w-5xl mx-auto relative z-10 grid md:grid-cols-2 gap-16 items-center">
+                <div className="space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-1000">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-900 text-zinc-400 text-[10px] font-mono uppercase font-bold tracking-widest rounded-full border border-zinc-800">
+                    <i className="ph-bold ph-globe-hemisphere-west"></i> O Novo Cenário
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">
+                    Sustentabilidade Virou Risco Tributário.
+                  </h2>
+                  <p className="text-lg text-zinc-400 font-light leading-relaxed">
+                    A Receita Federal cruzou os dados fiscais com o sistema federal do SINIR. A conformidade ambiental da logística reversa deixou de ser uma política de marca para se tornar uma obrigação cruzada via SPED.
+                  </p>
+                </div>
+                <div className="relative p-12 bg-zinc-900/30 border border-zinc-800 rounded-2xl glow-card overflow-hidden group">
+                  <img src="./assets/dashboard.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-overlay pointer-events-none group-hover:scale-105 transition-transform duration-1000" />
+                  <div className="relative z-10">
+                    <div className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-4">Projeção de Autuações (2026)</div>
+                    <div className="text-5xl font-bold text-white tracking-tighter">R$ 4.2 Bi</div>
+                    <div className="text-sm text-red-400 mt-4 flex items-center gap-2">
+                      <i className="ph-bold ph-trend-up"></i> +400% de aumento nas multas via SEFAZ
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* P: Problema - Isometric Data Layers (Creative + Corporate) */}
+            <section className="relative py-32 px-6 sm:px-12 border-t border-zinc-900 bg-[#020202] overflow-hidden perspective-1000">
+              <div className="max-w-7xl mx-auto">
+                <div className="grid lg:grid-cols-2 gap-16 md:gap-24 items-center">
+                  
+                  {/* Left: Content & Text */}
+                  <div className="space-y-12 z-10 relative">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-950/20 text-red-500 text-[10px] font-mono uppercase tracking-widest rounded-full border border-red-900/30 mb-8">
+                         <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Fraude Estrutural
+                      </div>
+                      <h2 className="text-4xl md:text-5xl font-light text-white tracking-tight leading-tight mb-6">
+                        A Cadeia de Suprimentos <br className="hidden md:block" />está <span className="font-semibold text-red-500">Corrompida</span>.
+                      </h2>
+                      <p className="text-lg text-zinc-400 font-light leading-relaxed max-w-lg">
+                        Intermediários opacos criam furos sistêmicos no balanço de massa. O modelo atual transfere o risco criminal de terceiros diretamente para o seu CNPJ.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 relative border-l border-zinc-800/50 pl-6">
+                      
+                      {/* Item 1 */}
+                      <div className="group py-6 border-b border-zinc-800/50 hover:border-zinc-500 transition-colors cursor-default">
+                        <span className="text-zinc-600 font-mono text-[10px] tracking-widest uppercase block mb-3">Camada 01</span>
+                        <h3 className="text-xl font-medium text-zinc-200 group-hover:text-white mb-2 transition-colors">Inconsistência de Massa</h3>
+                        <p className="text-sm text-zinc-500 group-hover:text-zinc-300 font-light leading-relaxed transition-colors max-w-md">
+                          A divergência bruta entre o volume real de embalagens e a compensação declarada é o gatilho instantâneo da malha fina fiscal.
+                        </p>
+                      </div>
+
+                      {/* Item 2 */}
+                      <div className="group py-6 border-b border-zinc-800/50 hover:border-zinc-500 transition-colors cursor-default">
+                        <span className="text-zinc-600 font-mono text-[10px] tracking-widest uppercase block mb-3">Camada 02</span>
+                        <h3 className="text-xl font-medium text-zinc-200 group-hover:text-white mb-2 transition-colors">Operações de Fachada</h3>
+                        <p className="text-sm text-zinc-500 group-hover:text-zinc-300 font-light leading-relaxed transition-colors max-w-md">
+                          Certificados de cooperativas inoperantes sem lastro físico. A fraude de terceiros contamina sua declaração corporativa, gerando co-responsabilidade.
+                        </p>
+                      </div>
+
+                      {/* Item 3 (Crítico) */}
+                      <div className="group py-6 border-b border-red-900/50 hover:border-red-500 transition-colors cursor-default relative">
+                        <div className="absolute -left-6 top-0 bottom-0 w-[1px] bg-red-500/0 group-hover:bg-red-500 transition-colors"></div>
+                        <span className="text-red-500/50 font-mono text-[10px] tracking-widest uppercase block mb-3 font-bold group-hover:text-red-500">Camada 03 Crítica</span>
+                        <h3 className="text-xl font-medium text-red-500 group-hover:text-red-400 mb-2 transition-colors">Duplicidade de MTR</h3>
+                        <p className="text-red-900/60 group-hover:text-red-200/80 font-light leading-relaxed transition-colors max-w-md">
+                          A mesma tonelada transacionada ilicitamente para múltiplos CNPJs. Os sistemas federais detectam o conflito criptográfico de imediato.
+                        </p>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Right: Isometric Visualization (The Creative Hook) */}
+                  <div className="relative h-[600px] hidden lg:flex items-center justify-center">
+                    
+                    {/* Isometric Canvas */}
+                    <div 
+                      className="relative w-[300px] h-[300px] hover:scale-105 transition-transform duration-1000 ease-out" 
+                      style={{ transform: 'rotateX(55deg) rotateZ(-45deg)', transformStyle: 'preserve-3d' }}
+                    >
+                      {/* Vertical Red Beam connecting the flaws */}
+                      <div className="absolute top-1/2 left-1/2 w-1 h-[300px] bg-red-500/40 blur-[2px] shadow-[0_0_20px_rgba(239,68,68,0.8)]" style={{ transform: 'translate(-50%, -50%) rotateX(-90deg)', transformOrigin: 'top' }}></div>
+
+                      {/* Layer 1: Inconsistência de Massa (Bottom) */}
+                      <div className="absolute inset-0 bg-[#0a0a0a]/80 border border-zinc-700/50 backdrop-blur-md rounded-2xl shadow-[20px_20px_40px_rgba(0,0,0,0.9)] transition-all duration-700 hover:border-zinc-400 hover:-translate-y-2 group" style={{ transform: 'translateZ(0px)' }}>
+                        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_20%,rgba(255,255,255,0.03)_50%,transparent_80%)]"></div>
+                        <div className="absolute top-4 left-4 text-zinc-500 font-mono text-[10px] uppercase font-bold tracking-widest">L1: Massa Física</div>
+                        <div className="absolute bottom-6 left-6 right-6 flex gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                           <div className="h-1.5 flex-1 bg-zinc-600 rounded-full"></div>
+                           <div className="h-1.5 flex-1 bg-zinc-600 rounded-full"></div>
+                           <div className="h-1.5 flex-1 bg-red-600 rounded-full animate-pulse"></div> {/* Divergence */}
+                        </div>
+                      </div>
+
+                      {/* Layer 2: Operações de Fachada (Middle) */}
+                      <div className="absolute inset-0 bg-[#0a0a0a]/80 border border-zinc-700/50 backdrop-blur-md rounded-2xl shadow-[20px_20px_40px_rgba(0,0,0,0.9)] transition-all duration-700 hover:border-zinc-400 hover:-translate-y-2" style={{ transform: 'translateZ(100px)' }}>
+                         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_20%,rgba(255,255,255,0.03)_50%,transparent_80%)]"></div>
+                         <div className="absolute top-4 left-4 text-zinc-500 font-mono text-[10px] uppercase font-bold tracking-widest">L2: Validação Documental</div>
+                         {/* Fake operation visual */}
+                         <div className="absolute inset-0 m-auto w-16 h-16 border-2 border-dashed border-red-500/40 rounded flex items-center justify-center bg-red-500/5">
+                            <span className="text-red-500 font-mono text-xs">NULL</span>
+                         </div>
+                      </div>
+
+                      {/* Layer 3: Duplicidade de MTR (Top) */}
+                      <div className="absolute inset-0 bg-[#1a0505]/80 border border-red-500/40 backdrop-blur-md rounded-2xl shadow-[20px_20px_50px_rgba(239,68,68,0.15)] transition-all duration-700 hover:border-red-400 hover:-translate-y-2" style={{ transform: 'translateZ(200px)' }}>
+                         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_20%,rgba(239,68,68,0.05)_50%,transparent_80%)]"></div>
+                         <div className="absolute top-4 left-4 text-red-500 font-mono text-[10px] uppercase font-bold tracking-widest">L3: Hash Collision</div>
+                         {/* Duplicate Document visual */}
+                         <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-14 h-16 border-2 border-red-500/60 rounded bg-red-500/10 -ml-4 -mt-4 relative">
+                               <div className="absolute top-2 left-2 w-6 h-0.5 bg-red-500/60"></div>
+                            </div>
+                            <div className="w-14 h-16 border-2 border-red-500 rounded bg-[#1a0505] absolute flex items-center justify-center shadow-2xl animate-pulse">
+                               <i className="ph-bold ph-warning text-red-500"></i>
+                            </div>
+                         </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+            {/* I: Implicação - Technical Blueprint (Ultra Profissional e Sério) */}
+            <section className="relative py-32 px-6 sm:px-12 border-t border-zinc-900 bg-[#000000] overflow-hidden">
+              <div className="max-w-6xl mx-auto">
+                
+                {/* Header Editorial */}
+                <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
+                  <div className="max-w-3xl">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-900 text-zinc-400 text-[10px] font-mono uppercase tracking-widest rounded-full border border-zinc-800 mb-8">
+                       <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                       Anatomia do Risco Fiscal
+                    </div>
+                    <h2 className="text-4xl md:text-5xl font-light text-white tracking-tight leading-tight">
+                      A Inércia Gera o <br className="hidden md:block" /><span className="font-medium text-white">Passivo Oculto</span>.
+                    </h2>
+                  </div>
+                  <div className="max-w-sm">
+                    <p className="text-base text-zinc-400 font-light leading-relaxed border-l border-zinc-800 pl-6">
+                      Uma inconsistência no MTR desencadeia um protocolo sistêmico de autuação. O tempo não congela o problema, ele multiplica as consequências financeiras.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Fluxo Técnico (Blueprint) */}
+                <div className="relative w-full pt-16">
+                  {/* Linha Guia Principal */}
+                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-zinc-800 via-zinc-600 to-red-600"></div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12">
+                    
+                    {/* Estágio 1 */}
+                    <div className="relative group">
+                      {/* Conectores Técnicos */}
+                      <div className="absolute -top-16 left-0 w-[1px] h-16 bg-zinc-800 group-hover:bg-zinc-500 transition-colors"></div>
+                      <div className="absolute -top-[67px] left-[-3px] w-2 h-2 rounded-full bg-zinc-500 ring-4 ring-black"></div>
+                      
+                      <div className="text-zinc-500 font-mono text-[10px] tracking-widest uppercase mb-6 flex items-center gap-3">
+                        <span className="text-white/10 font-bold">01 //</span> Detecção
+                      </div>
+                      <h4 className="text-white font-medium text-2xl mb-4 tracking-tight">Auditoria Automática</h4>
+                      <p className="text-zinc-400 font-light leading-relaxed text-sm">
+                        O algoritmo da SEFAZ realiza o cruzamento do SPED. A divergência entre a NFe e o lastro no SINIR aciona o primeiro alerta na malha fina federal.
+                      </p>
+                    </div>
+
+                    {/* Estágio 2 */}
+                    <div className="relative group">
+                      {/* Conectores Técnicos */}
+                      <div className="absolute -top-16 left-0 w-[1px] h-16 bg-zinc-800 group-hover:bg-zinc-400 transition-colors"></div>
+                      <div className="absolute -top-[67px] left-[-3px] w-2 h-2 rounded-full bg-zinc-400 ring-4 ring-black"></div>
+                      
+                      <div className="text-zinc-500 font-mono text-[10px] tracking-widest uppercase mb-6 flex items-center gap-3">
+                        <span className="text-white/10 font-bold">02 //</span> Escalação
+                      </div>
+                      <h4 className="text-white font-medium text-2xl mb-4 tracking-tight">Autuação Retroativa</h4>
+                      <p className="text-zinc-400 font-light leading-relaxed text-sm">
+                        A fiscalização atua de forma punitiva. Penalidades com juros compostos são aplicadas sobre <strong className="text-zinc-200">todo o volume movimentado</strong> nos últimos 5 anos.
+                      </p>
+                    </div>
+
+                    {/* Estágio 3 */}
+                    <div className="relative group">
+                      {/* Conectores Técnicos */}
+                      <div className="absolute -top-16 left-0 w-[1px] h-16 bg-red-900 group-hover:bg-red-500 transition-colors"></div>
+                      <div className="absolute -top-[68px] left-[-4px] w-2.5 h-2.5 rounded-full bg-red-500 ring-4 ring-black shadow-[0_0_15px_rgba(239,68,68,0.6)]"></div>
+                      
+                      <div className="text-red-500 font-mono text-[10px] tracking-widest uppercase mb-6 flex items-center gap-3 font-bold">
+                        <span className="text-red-500/30">03 //</span> Execução Crítica
+                      </div>
+                      <h4 className="text-white font-medium text-2xl mb-4 tracking-tight flex items-center gap-3">
+                        Bloqueio de CND
+                        <i className="ph-fill ph-warning-circle text-red-500 text-xl"></i>
+                      </h4>
+                      <p className="text-zinc-400 font-light leading-relaxed text-sm">
+                        A consequência final para o CNPJ. A empresa sofre suspensão imediata de acesso a crédito bancário, paralisação de caixa e impedimento total em licitações públicas.
+                      </p>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* N: Necessidade - Diagrama Interativo (Fuga dos Cards) */}
+            <section className="relative py-32 px-6 sm:px-12 border-t border-zinc-900 bg-black overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-green-900/10 via-black to-black pointer-events-none"></div>
+              
+              <div className="max-w-6xl mx-auto relative z-10 text-center mb-24">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-500 text-[10px] font-mono uppercase font-bold tracking-widest rounded-full border border-green-500/20 mb-6">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Firewall Algorítmico
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight max-w-4xl mx-auto">
+                  Nós Substituímos a Confiança Cega por Lastro Matemático.
+                </h2>
+              </div>
+
+              <div className="max-w-5xl mx-auto relative z-10">
+                {/* Diagrama de Pipeline Customizado */}
+                <div className="relative flex flex-col md:flex-row items-start justify-between gap-12 md:gap-0">
+                  
+                  {/* Step 1 */}
+                  <div className="w-full md:w-1/3 flex flex-col items-center text-center relative group">
+                    <div className="w-24 h-24 rounded-2xl border border-zinc-800 bg-[#050505] rotate-45 flex items-center justify-center relative z-10 group-hover:border-green-500/50 transition-colors shadow-xl">
+                      <i className="ph-light ph-target text-4xl text-zinc-500 -rotate-45 group-hover:text-green-500 transition-colors"></i>
+                    </div>
+                    <div className="mt-12">
+                      <h4 className="text-white font-bold mb-2">1. Origem Primária</h4>
+                      <p className="text-xs text-zinc-500 max-w-[200px] mx-auto leading-relaxed">Mapeamento da cooperativa ao destino sem intermediários opacos.</p>
+                    </div>
+                  </div>
+
+                  {/* Linha de Conexão 1 (Animada) */}
+                  <div className="hidden md:block absolute top-12 left-[16.6%] right-[50%] h-[1px] bg-zinc-900">
+                    <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-r from-transparent via-green-500/50 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
+                    <div className="w-2 h-2 rounded-full bg-green-500 absolute top-1/2 -translate-y-1/2 left-[40%] shadow-[0_0_15px_#22c55e] animate-pulse"></div>
+                  </div>
+
+                  {/* Step 2 (Motor Principal) */}
+                  <div className="w-full md:w-1/3 flex flex-col items-center text-center relative group md:-mt-8">
+                    <div className="w-32 h-32 rounded-full border-2 border-green-500/30 bg-green-950/20 flex items-center justify-center relative z-10 shadow-[0_0_40px_rgba(34,197,94,0.15)]">
+                      <div className="absolute inset-0 rounded-full border border-green-500/50 animate-[spin_10s_linear_infinite] border-t-transparent border-b-transparent"></div>
+                      <i className="ph-light ph-cpu text-5xl text-green-500"></i>
+                    </div>
+                    <div className="mt-8">
+                      <h4 className="text-green-500 font-bold mb-2 text-lg">2. Auditoria Cruzada</h4>
+                      <p className="text-xs text-zinc-400 max-w-[200px] mx-auto leading-relaxed">Motor algorítmico cruza NFs e MTRs em tempo real contra as bases do SINIR e SEFAZ.</p>
+                    </div>
+                  </div>
+
+                  {/* Linha de Conexão 2 (Animada) */}
+                  <div className="hidden md:block absolute top-12 left-[50%] right-[16.6%] h-[1px] bg-zinc-900">
+                    <div className="w-2 h-2 rounded-full bg-green-500 absolute top-1/2 -translate-y-1/2 right-[40%] shadow-[0_0_15px_#22c55e] animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="w-full md:w-1/3 flex flex-col items-center text-center relative group">
+                    <div className="w-24 h-24 rounded-2xl border border-zinc-800 bg-[#050505] rotate-45 flex items-center justify-center relative z-10 group-hover:border-green-500/50 transition-colors shadow-xl">
+                      <i className="ph-light ph-link text-4xl text-zinc-500 -rotate-45 group-hover:text-green-500 transition-colors"></i>
+                    </div>
+                    <div className="mt-12">
+                      <h4 className="text-white font-bold mb-2">3. Lastro Blockchain</h4>
+                      <p className="text-xs text-zinc-500 max-w-[200px] mx-auto leading-relaxed">Emissão de token imutável provando a legitimidade de cada tonelada compensada.</p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+          </div>
+          {/* --- FIM SPIN SELLING --- */}
+
+          <main className="relative z-10 max-w-7xl mx-auto px-6 py-24">
+            {/* DIAGNÓSTICO (CALL TO ACTION DO SPIN) */}
+            <section className="grid lg:grid-cols-12 gap-16 items-start">
+              <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
+                <h2 className="text-3xl font-bold text-white leading-tight">
+                  Simulação de Exposição Fiscal
+                </h2>
+                <p className="text-sm text-zinc-400 leading-relaxed font-light">
+                  Preencha o formulário para identificar o déficit exato de compensação ambiental na sua planta industrial de acordo com o cruzamento automático do IBAMA.
+                </p>
+                <div className="mt-8">
+                  <img src="./assets/dashboard.png" alt="Dashboard" className="w-full rounded border border-zinc-900 opacity-60 grayscale hover:grayscale-0 transition-all duration-700 object-cover h-48" />
+                  <p className="text-[9px] font-mono text-zinc-600 mt-3 uppercase text-center">Dashboard Analítico (Preview)</p>
+                </div>
+              </div>
+
+              {/* FORMULÁRIO */}
+              <div className="lg:col-span-7">
+                <div className="w-full bg-zinc-950 border border-zinc-900 p-8 md:p-12 relative overflow-hidden">
+                  <div className="absolute top-0 inset-x-0 h-0.5 bg-zinc-900">
+                    <div className="h-full bg-white transition-all duration-500" style={{ width: `${(spinStep / 6) * 100}%` }}></div>
+                  </div>
+                  
+                  {spinStep <= 4 && (
+                    <div className="flex justify-between items-center mb-8 pb-4 border-b border-zinc-900">
+                      <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                        Etapa {spinStep} de 4
+                      </div>
+                      {spinStep > 1 && (
+                        <button onClick={prevFormStep} className="text-zinc-500 hover:text-white transition flex items-center gap-1.5 text-[10px] font-mono uppercase">
+                          <i className="ph-bold ph-arrow-left" /> Retornar
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-6">
+                    
+                    {spinStep === 1 && (
+                      <div className="space-y-6 animate-in fade-in duration-300">
+                        <h3 className="text-lg font-bold text-white">Segmento Operacional</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            { id: 'alimentos', label: 'Alimentos e Bebidas', desc: 'Alto volume de PET/Papelão.', icon: 'ph-coffee', bg: 'seg_food.png' },
+                            { id: 'quimicos', label: 'Química e Tintas', desc: 'Embalagens com Risco de Contaminação.', icon: 'ph-flask', bg: 'seg_chem.png' },
+                            { id: 'bens', label: 'Bens de Consumo', desc: 'Foco direto no consumidor final (B2C).', icon: 'ph-shopping-bag', bg: 'seg_retail.png' },
+                            { id: 'embalagem', label: 'Fab. Embalagens', desc: 'Responsabilidade solidária tributária.', icon: 'ph-package', bg: 'seg_pack.png' }
+                          ].map((opt) => (
+                            <button 
+                              key={opt.id} onClick={() => selectValueAndAdvance('segmento', opt.id)}
+                              className="w-full flex flex-col p-6 bg-black border border-zinc-900 hover:border-zinc-700 transition-all text-left glow-card group relative overflow-hidden"
+                            >
+                              <img src={`./assets/${opt.bg}`} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 grayscale group-hover:opacity-30 group-hover:scale-105 transition-all duration-700 pointer-events-none mix-blend-overlay" />
+                              <div className="relative z-10">
+                                <i className={`ph-light ${opt.icon} text-3xl text-zinc-500 mb-4 group-hover:text-white transition-colors`} />
+                                <span className="text-sm font-bold text-white block">{opt.label}</span>
+                                <span className="text-[10px] text-zinc-500 font-mono mt-2 block leading-relaxed">{opt.desc}</span>
+                              </div>
+                              <i className="ph-bold ph-arrow-right text-white absolute top-6 right-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all z-10" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {spinStep === 2 && (
+                      <div className="space-y-6 animate-in fade-in duration-300">
+                        <h3 className="text-lg font-bold text-white">Balanço Físico Pós-Consumo</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            { id: 'ate-5', label: '< 5 Toneladas', desc: 'Baixa criticidade.', icon: 'ph-battery-low', bg: 'vol_low.png' },
+                            { id: '5-20', label: '5 a 20 Toneladas', desc: 'Criticidade Média / Exposição.', icon: 'ph-battery-medium', bg: 'vol_med.png' },
+                            { id: 'mais-20', label: '> 20 Toneladas', desc: 'Criticidade Alta / Alvo Direto SEFAZ.', icon: 'ph-battery-high', bg: 'vol_high.png' },
+                            { id: 'nao-sei', label: 'Não Consolidados', desc: 'Falha grave. Auditoria imediata recomendada.', icon: 'ph-warning-octagon', bg: 'vol_warn.png' }
+                          ].map((opt) => (
+                            <button 
+                              key={opt.id} onClick={() => selectValueAndAdvance('volume', opt.id)}
+                              className="w-full flex flex-col p-6 bg-black border border-zinc-900 hover:border-zinc-700 transition-all text-left glow-card group relative overflow-hidden"
+                            >
+                              <img src={`./assets/${opt.bg}`} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 grayscale group-hover:opacity-30 group-hover:scale-105 transition-all duration-700 pointer-events-none mix-blend-overlay" />
+                              <div className="relative z-10">
+                                <i className={`ph-light ${opt.icon} text-3xl text-zinc-500 mb-4 group-hover:text-white transition-colors`} />
+                                <span className="text-sm font-bold text-white block">{opt.label}</span>
+                                <span className="text-[10px] text-zinc-500 font-mono mt-2 block leading-relaxed">{opt.desc}</span>
+                              </div>
+                              <i className="ph-bold ph-arrow-right text-white absolute top-6 right-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all z-10" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {spinStep === 3 && (
+                      <div className="space-y-6 animate-in fade-in duration-300">
+                        <h3 className="text-lg font-bold text-white">Matriz de Resíduos Predominante</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            { id: 'plastico', label: 'Polímeros / Plástico', desc: 'Déficit de Cooperativas Registradas.', icon: 'ph-recycle', bg: 'mat_plas.png' },
+                            { id: 'papelao', label: 'Celulose / Papelão', desc: 'Alta liquidez, mas alto índice de fraude no SINIR.', icon: 'ph-box-arrow-down', bg: 'mat_paper.png' },
+                            { id: 'vidro', label: 'Vidro e Metais', desc: 'Logística Reversa Complexa.', icon: 'ph-drop', bg: 'mat_glass.png' },
+                            { id: 'multiplo', label: 'Material Misto', desc: 'Complexidade de rastreabilidade multiplicada.', icon: 'ph-intersect', bg: 'mat_mixed.png' }
+                          ].map((opt) => (
+                            <button 
+                              key={opt.id} onClick={() => selectValueAndAdvance('material', opt.id)}
+                              className="w-full flex flex-col p-6 bg-black border border-zinc-900 hover:border-zinc-700 transition-all text-left glow-card group relative overflow-hidden"
+                            >
+                              <img src={`./assets/${opt.bg}`} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10 grayscale group-hover:opacity-30 group-hover:scale-105 transition-all duration-700 pointer-events-none mix-blend-overlay" />
+                              <div className="relative z-10">
+                                <i className={`ph-light ${opt.icon} text-3xl text-zinc-500 mb-4 group-hover:text-white transition-colors`} />
+                                <span className="text-sm font-bold text-white block">{opt.label}</span>
+                                <span className="text-[10px] text-zinc-500 font-mono mt-2 block leading-relaxed">{opt.desc}</span>
+                              </div>
+                              <i className="ph-bold ph-arrow-right text-white absolute top-6 right-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all z-10" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {spinStep === 4 && (
+                      <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="text-center space-y-2 mb-8">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white text-[10px] font-mono uppercase font-bold tracking-widest rounded-full mb-4">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                            Private Beta
+                          </div>
+                          <h3 className="text-2xl font-bold text-white tracking-tight">Solicite Acesso Antecipado</h3>
+                          <p className="text-sm text-zinc-400 font-light max-w-md mx-auto">
+                            O firewall ambiental da Greentech está atualmente restrito a convidados. Garanta sua posição na fila de integração.
+                          </p>
+                        </div>
+                        
+                        <form onSubmit={(e) => { e.preventDefault(); setSpinStep(5); }} className="space-y-5 max-w-md mx-auto">
+                          <div className="space-y-4">
+                            <div className="relative">
+                              <i className="ph-light ph-user absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-lg"></i>
+                              <input type="text" name="nome" value={formData.nome} onChange={handleInputChange} required placeholder="Nome do Executivo"
+                                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg text-sm py-4 pl-12 pr-4 text-white outline-none focus:border-zinc-400 focus:bg-zinc-900 transition-all placeholder:text-zinc-600" />
+                            </div>
+                            <div className="relative">
+                              <i className="ph-light ph-buildings absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-lg"></i>
+                              <input type="text" name="empresa" value={formData.empresa} onChange={handleInputChange} required placeholder="Razão Social / CNPJ"
+                                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg text-sm py-4 pl-12 pr-4 text-white outline-none focus:border-zinc-400 focus:bg-zinc-900 transition-all placeholder:text-zinc-600" />
+                            </div>
+                            <div className="relative">
+                              <i className="ph-light ph-envelope-simple absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-lg"></i>
+                              <input type="email" name="email" value={formData.email} onChange={handleInputChange} required placeholder="E-mail Corporativo"
+                                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg text-sm py-4 pl-12 pr-4 text-white outline-none focus:border-zinc-400 focus:bg-zinc-900 transition-all placeholder:text-zinc-600" />
+                            </div>
+                          </div>
+                          <button type="submit" disabled={!formData.nome || !formData.email || !formData.empresa}
+                            className="w-full bg-white hover:bg-zinc-200 text-black font-bold text-[11px] py-4 rounded-lg uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-6 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+                          >
+                            Solicitar Acesso Antecipado <i className="ph-bold ph-arrow-right" />
+                          </button>
+                        </form>
+                      </div>
+                    )}
+
+                    {spinStep === 5 && (
+                      <div className="space-y-8 animate-in zoom-in-95 duration-500 py-8">
+                        <div className="text-center space-y-4 mb-6">
+                          <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i className="ph-fill ph-check-circle text-4xl text-green-500" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-white tracking-tight">Acesso Solicitado.</h3>
+                          <p className="text-[11px] text-zinc-500 font-mono uppercase tracking-widest">Posição Registrada na Lista de Espera</p>
+                        </div>
+
+                        <div className="max-w-md mx-auto bg-black border border-zinc-900 p-6 space-y-4 font-mono text-xs text-zinc-400 rounded-lg shadow-xl">
+                          <div className="flex justify-between border-b border-zinc-900 pb-4">
+                            <span>Empresa Solicitante</span>
+                            <span className="text-white font-semibold">{formData.empresa}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-zinc-900 pb-4 pt-2">
+                            <span>Status de Acesso</span>
+                            <span className="text-yellow-500">Em Análise</span>
+                          </div>
+                          <div className="flex justify-between pt-2">
+                            <span>Notificação</span>
+                            <span className="text-white">{formData.email}</span>
+                          </div>
+                        </div>
+
+                        <div className="max-w-md mx-auto p-4 bg-zinc-900/50 text-zinc-400 text-xs font-light text-center border border-zinc-800 rounded-lg">
+                          Nossa equipe de engenharia entrará em contato assim que um slot de integração for liberado para o seu setor.
+                        </div>
+
+                        <div className="max-w-md mx-auto mt-4">
+                          <button onClick={() => window.location.reload()}
+                            className="w-full bg-transparent border border-zinc-800 hover:bg-zinc-900 text-white font-bold text-[11px] uppercase tracking-widest py-4 rounded-lg flex items-center justify-center gap-2 transition-all"
+                          >
+                            Voltar ao Início
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* BENEFITS - INNOVATIVE PROTOCOL UI */}
+            <section className="space-y-16 border-t border-zinc-900 pt-24 max-w-5xl mx-auto">
+              <div className="text-center space-y-4 mb-12">
+                <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">O protocolo de defesa definitivo.</h2>
+                <p className="text-sm text-zinc-400 font-light">
+                  A Greentech intercepta a autuação antes que ela nasça.
+                </p>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-12 items-stretch">
+                {/* Lateral Navigation Pipeline */}
+                <div className="w-full md:w-1/3 space-y-1 relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-px bg-zinc-900"></div>
+                  {[
+                    { id: 'hash', title: 'Hash Criptográfico', subtitle: 'PREVENÇÃO DE FRAUDE', icon: 'ph-cube' },
+                    { id: 'cnd', title: 'Blindagem de CND', subtitle: 'OPERAÇÃO SEGURA', icon: 'ph-shield-check' },
+                    { id: 'custos', title: 'Custos Zerados', subtitle: 'OPERAÇÃO ENXUTA', icon: 'ph-money' }
+                  ].map((b, idx) => {
+                    const isActive = activeBenefit === idx;
+                    return (
+                      <button 
+                        key={b.id} 
+                        onClick={() => setActiveBenefit(idx)}
+                        className={`w-full text-left pl-6 py-6 relative transition-all duration-300 group ${isActive ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+                      >
+                        <div className={`absolute left-0 top-0 bottom-0 w-[2px] transition-all duration-500 ${isActive ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,1)]' : 'bg-transparent group-hover:bg-zinc-700'}`}></div>
+                        <span className="text-[10px] font-mono uppercase tracking-widest block text-zinc-500 mb-1">{b.subtitle}</span>
+                        <span className={`text-lg font-bold tracking-tight ${isActive ? 'text-white' : 'text-zinc-400'}`}>{b.title}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Display Terminal */}
+                <div className="w-full md:w-2/3">
+                  <div className="border border-zinc-800 bg-zinc-950 p-8 md:p-10 relative overflow-hidden h-full flex flex-col justify-between shadow-2xl">
+                    
+                    {/* Background Icon */}
+                    <div className="absolute -top-10 -right-10 opacity-5 pointer-events-none transition-all duration-700 transform scale-150">
+                       {[
+                          <i key="0" className="ph-fill ph-cube text-[200px] text-white" />,
+                          <i key="1" className="ph-fill ph-shield-check text-[200px] text-white" />,
+                          <i key="2" className="ph-fill ph-money text-[200px] text-white" />
+                       ][activeBenefit]}
+                    </div>
+                    
+                    <div className="relative z-10 space-y-8">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-black text-[10px] font-mono uppercase font-bold tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                        Módulo Ativo
+                      </div>
+                      
+                      <div className="min-h-[96px]">
+                        <p className="text-lg md:text-xl text-zinc-300 font-light leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-500" key={activeBenefit}>
+                          {
+                            [
+                              'Dupla contagem bloqueada por design. 100% dos dados suportam auditorias diretas pelo SINIR, impossibilitando fraudes de lastro na cadeia de reciclagem.',
+                              'Registro validado garantindo que as Certidões Negativas de Débito estaduais não sejam suspensas por falhas declaratórias de terceiros.',
+                              'Sem criação de departamentos de sustentabilidade. Nós conectamos sua indústria aos emissores homologados automaticamente, liquidando o passivo.'
+                            ][activeBenefit]
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 grid grid-cols-2 gap-8 pt-8 mt-12 border-t border-zinc-900 animate-in fade-in duration-700 delay-100" key={`metric-${activeBenefit}`}>
+                      <div>
+                        <span className="block text-3xl font-bold text-white">
+                          {['100% Auditável', 'Zero Bloqueios', 'ROI Imediato'][activeBenefit]}
+                        </span>
+                        <span className="block text-[10px] font-mono text-zinc-500 uppercase mt-2 tracking-widest">Status Operacional</span>
+                      </div>
+                      <div className="border-l border-zinc-900 pl-8">
+                        <span className="block text-3xl font-bold text-white">
+                          {['SHA-256', '24/7 Ativo', '-100% Opex'][activeBenefit]}
+                        </span>
+                        <span className="block text-[10px] font-mono text-zinc-500 uppercase mt-2 tracking-widest">Parâmetro</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </main>
+
+          <footer className="border-t border-zinc-900 bg-black py-12 text-center text-[10px] font-mono text-zinc-600">
+            <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-2">
+                <i className="ph-fill ph-shield-check text-zinc-400 text-sm" />
+                <span className="text-zinc-300 uppercase tracking-widest font-bold">Greentech Corporativo</span>
+              </div>
+              <p>Campos Gerais, PR • HUB Trilhar Sandbox • 2026</p>
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
